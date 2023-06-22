@@ -117,6 +117,7 @@ private fun DrawScope.drawLaser(
     laserSizePx: Float
 ) {
     val impacts = impactFinder.findImpacts(
+        count = 3,
         width = size.width,
         height = size.height,
         borderSize = bordersSizePx,
@@ -124,13 +125,11 @@ private fun DrawScope.drawLaser(
         direction = touchedPoint
     )
 
-    impacts.any { it == Offset.Unspecified } && return
-
     val path = Path().apply {
         moveTo(laser.x, laser.y)
-        impacts.forEach { impact ->
-            lineTo(impact.x, impact.y)
-        }
+        impacts
+            .takeWhile { it != Offset.Unspecified }
+            .forEach { impact -> lineTo(impact.x, impact.y) }
     }
     drawPath(
         color = laserColor,

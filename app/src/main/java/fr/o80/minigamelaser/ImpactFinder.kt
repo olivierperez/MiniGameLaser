@@ -67,21 +67,34 @@ class ImpactFinder {
     }
 
     fun findImpacts(
+        count: Int,
         width: Float,
         height: Float,
         borderSize: Float,
         laser: Offset,
         direction: Offset
     ): List<Offset> {
+        check(count >= 1) { "Impacts count must be at least 1!" }
+
         val impacts = mutableListOf<Offset>()
         val firstImpact = findImpact(width, height, borderSize, laser, direction)
         impacts += firstImpact
 
-        val secondImpact =
-            findBounce(firstImpact, borderSize, direction, width, height)
-                ?: return impacts
+        var remainingImpacts = count - 1
+        var previousImpact = firstImpact
+        var nextDirection = direction
+        while (remainingImpacts > 0) {
+            val (nextImpact, newDirection) =
+                findBounce(previousImpact, borderSize, nextDirection, width, height)
+                    ?: return impacts
 
-        impacts += secondImpact
+            nextImpact == Offset.Unspecified && return impacts
+
+            impacts += nextImpact
+            previousImpact = nextImpact
+            nextDirection = newDirection
+            remainingImpacts--
+        }
         return impacts
     }
 
@@ -91,13 +104,13 @@ class ImpactFinder {
         direction: Offset,
         width: Float,
         height: Float
-    ): Offset? = when {
+    ): Pair<Offset, Offset>? = when {
         firstImpact.x == borderSize || firstImpact.x == width - borderSize -> {
             val newDirection = Offset(
                 x = direction.x,
                 y = firstImpact.y - (direction.y - firstImpact.y)
             )
-            findImpact(width, height, borderSize, firstImpact, newDirection)
+            Pair(findImpact(width, height, borderSize, firstImpact, newDirection), newDirection)
         }
 
         firstImpact.y == borderSize -> {
@@ -105,7 +118,7 @@ class ImpactFinder {
                 x = firstImpact.x - (direction.x - firstImpact.x),
                 y = direction.y
             )
-            findImpact(width, height, borderSize, firstImpact, newDirection)
+            Pair(findImpact(width, height, borderSize, firstImpact, newDirection), newDirection)
         }
 
         else -> null
